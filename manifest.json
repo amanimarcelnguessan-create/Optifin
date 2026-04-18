@@ -1,0 +1,46 @@
+{
+  "name": "Finpro — Gestion Financière Personnelle",
+  "short_name": "Finpro",
+  "description": "Application de gestion financière personnelle : suivi des dépenses, revenus, épargne, objectifs et budget mensuel en FCFA.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1e293b",
+  "theme_color": "#16a34a",
+  "lang": "fr",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Nouvelle transaction",
+      "short_name": "Transaction",
+      "description": "Ajouter une nouvelle transaction",
+      "url": "./index.html#nouvelle-transaction",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Tableau de bord",
+      "short_name": "Tableau",
+      "description": "Voir le tableau de bord",
+      "url": "./index.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": []
+}
