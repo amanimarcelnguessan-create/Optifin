@@ -606,7 +606,8 @@ var S = {
   srch: "",
   curBudCat: null,
   txType: "dep",
-  bilanY: CY
+  bilanY: CY,
+  txMon: CY + "-" + p2(CM + 1)  // mois selectionne dans les operations (format YYYY-MM)
 };
 var AI_KEY = lsGet("fci_ai_key", "");
 
@@ -862,29 +863,146 @@ function iRow(k, txt) {
     + '<span style="font-size:12.5px;color:' + col + ';line-height:1.5">' + txt + '</span></div>';
 }
 
-// Transactions
+// Transactions — vue par mois avec archives
 function renderTxs() {
-  var list = [].concat(S.txs).sort(function(a,b) { return b.date.localeCompare(a.date); });
-  if (S.fil !== "tous") list = list.filter(function(t) { return t.type === S.fil; });
-  if (S.srch) {
+  var curMonKey = CY + "-" + p2(CM + 1);
+
+  // Collecter tous les mois ayant des transactions
+  var monMap = {};
+  S.txs.forEach(function(t) {
+    var d = new Date(t.date);
+    var key = d.getFullYear() + "-" + p2(d.getMonth() + 1);
+    if (!monMap[key]) monMap[key] = 0;
+    monMap[key]++;
+  });
+  var allMons = Object.keys(monMap).sort().reverse(); // du plus recent au plus ancien
+  if (allMons.indexOf(curMonKey) < 0) allMons.unshift(curMonKey);
+
+  // S'assurer que le mois selectionne est valide
+  if (allMons.indexOf(S.txMon) < 0) S.txMon = curMonKey;
+
+  var isSearch = S.srch.length > 0;
+
+  // Transactions filtrees
+  var list;
+  if (isSearch) {
+    // Recherche globale : tous les mois
     var q = S.srch.toLowerCase();
-    list = list.filter(function(t) { return (t.desc || "").toLowerCase().indexOf(q) >= 0 || (t.cat && getC(t.cat).l.toLowerCase().indexOf(q) >= 0); });
+    list = S.txs.filter(function(t) {
+      return (t.desc || "").toLowerCase().indexOf(q) >= 0
+          || (t.cat && getC(t.cat).l.toLowerCase().indexOf(q) >= 0);
+    });
+  } else {
+    // Filtre par mois selectionne
+    list = S.txs.filter(function(t) {
+      var d = new Date(t.date);
+      var key = d.getFullYear() + "-" + p2(d.getMonth() + 1);
+      return key === S.txMon;
+    });
   }
-  list = list.slice(0, 80);
+  if (S.fil !== "tous") list = list.filter(function(t) { return t.type === S.fil; });
+  list = list.sort(function(a,b) { return b.date.localeCompare(a.date); });
+
+  // Resume du mois selectionne
+  var monList = S.txs.filter(function(t) {
+    var d = new Date(t.date);
+    return (d.getFullYear() + "-" + p2(d.getMonth() + 1)) === S.txMon;
+  });
+  var mRev = 0, mDep = 0, mSav = 0;
+  monList.forEach(function(t) {
+    if (t.type === "rev") mRev += t.amount;
+    else if (t.type === "dep") mDep += t.amount;
+    else if (t.type === "sav") mSav += t.amount;
+  });
+  var mDispo = mRev - mDep - mSav;
+  var isCur = S.txMon === curMonKey;
+
+  // Label du mois selectionne
+  var parts = S.txMon.split("-");
+  var monLabel = MO[parseInt(parts[1], 10) - 1] + " " + parts[0];
+
+  // Selecteur de mois (pills horizontales scrollables)
+  var monPills = allMons.map(function(mk) {
+    var pp = mk.split("-");
+    var lbl = MS[parseInt(pp[1], 10) - 1] + " " + pp[0];
+    var isActive = mk === S.txMon;
+    var isCurMon = mk === curMonKey;
+    var style = isActive
+      ? "background:" + GOLD + ";color:#0A1A0E;font-weight:700;"
+      : "background:#0C1E18;color:" + MU + ";border:1px solid #1A3228;";
+    var badge = isCurMon && !isActive ? " 🟢" : "";
+    return '<button onclick="S.txMon=\'' + mk + '\';S.srch=\'\';renderPage()" '
+      + 'style="' + style + 'padding:6px 12px;border-radius:20px;font-size:12px;font-family:inherit;cursor:pointer;white-space:nowrap;border:none">'
+      + lbl + badge + '</button>';
+  }).join("");
+
+  // Regroupement par date
+  var grouped = {};
+  var groupOrder = [];
+  list.forEach(function(t) {
+    if (!grouped[t.date]) { grouped[t.date] = []; groupOrder.push(t.date); }
+    grouped[t.date].push(t);
+  });
+
+  var txHTML = "";
+  if (list.length === 0) {
+    txHTML = empty(isSearch ? "Aucun resultat pour \"" + S.srch + "\"" : "Aucune operation pour " + monLabel);
+  } else {
+    groupOrder.forEach(function(date) {
+      var dayTxs = grouped[date];
+      // Total du jour
+      var dayNet = 0;
+      dayTxs.forEach(function(t) { dayNet += (t.type === "rev" ? 1 : -1) * t.amount; });
+      var dayD = new Date(date + "T00:00:00");
+      var dayLbl = dayD.toLocaleDateString("fr-FR", {weekday:"short", day:"numeric", month:"short"});
+      txHTML += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 2px 4px;border-top:1px solid #1A3228;margin-top:8px">'
+        + '<span style="font-size:11px;font-weight:700;color:' + MU + ';text-transform:capitalize">' + dayLbl + '</span>'
+        + '<span style="font-size:11px;font-weight:700;color:' + (dayNet >= 0 ? GRN : RED) + '">'
+        + (dayNet >= 0 ? "+" : "") + fmt(dayNet) + '</span>'
+        + '</div>';
+      txHTML += dayTxs.map(function(t) { return txRow(t, true); }).join("");
+    });
+  }
+
   return '<div class="fu">'
+    // Barre actions
     + '<div class="brow">'
     + '<button class="btn btng" onclick="openAdd()">+ Ajouter</button>'
     + '<button class="btn" onclick="document.getElementById(\'csv-inp\').click()">Import CSV</button>'
     + '</div>'
-    + '<input id="srch-inp" placeholder="Rechercher..." value="' + esc(S.srch) + '" oninput="S.srch=this.value;renderPage()"/>'
+
+    // Selecteur de mois scrollable
+    + '<div style="overflow-x:auto;white-space:nowrap;padding:4px 0 10px;-webkit-overflow-scrolling:touch">'
+    + monPills
+    + '</div>'
+
+    // Resume du mois selectionne
+    + '<div style="background:#0C1E18;border:1px solid #1A3228;border-radius:12px;padding:12px 14px;margin-bottom:12px">'
+    + '<div style="font-size:11px;font-weight:700;color:' + GOLD + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">'
+    + (isCur ? "🟢 " : "🗂 ") + monLabel + (isCur ? " — Mois en cours" : " — Archive") + '</div>'
+    + '<div style="display:flex;justify-content:space-between;gap:8px">'
+    + '<div style="text-align:center;flex:1"><div style="font-size:10px;color:' + MU + '">Revenus</div><div style="font-size:13px;font-weight:700;color:' + GRN + '">' + fmt(mRev) + '</div></div>'
+    + '<div style="text-align:center;flex:1"><div style="font-size:10px;color:' + MU + '">Depenses</div><div style="font-size:13px;font-weight:700;color:' + RED + '">' + fmt(mDep) + '</div></div>'
+    + '<div style="text-align:center;flex:1"><div style="font-size:10px;color:' + MU + '">Epargne</div><div style="font-size:13px;font-weight:700;color:#34D399">' + fmt(mSav) + '</div></div>'
+    + '<div style="text-align:center;flex:1"><div style="font-size:10px;color:' + MU + '">Solde</div><div style="font-size:13px;font-weight:700;color:' + (mDispo >= 0 ? GRN : RED) + '">' + (mDispo >= 0 ? "+" : "") + fmt(mDispo) + '</div></div>'
+    + '</div></div>'
+
+    // Recherche
+    + '<input id="srch-inp" placeholder="Rechercher dans ' + (isSearch ? "toutes les operations..." : monLabel + "...") + '" value="' + esc(S.srch) + '" oninput="S.srch=this.value;renderPage()"/>'
+    + (isSearch ? '<div style="font-size:11px;color:' + GOLD + ';margin:-6px 0 8px;padding:4px 6px;background:#1A1205;border-radius:6px">🔍 Recherche globale — ' + list.length + ' resultat(s) dans tous les mois</div>' : '')
+
+    // Filtres type
     + '<div class="frow">'
-    + '<button class="fbtn' + (S.fil === "tous" ? " on" : "") + '" onclick="S.fil=\'tous\';renderPage()">Tous (' + S.txs.length + ')</button>'
+    + '<button class="fbtn' + (S.fil === "tous" ? " on" : "") + '" onclick="S.fil=\'tous\';renderPage()">Tous (' + list.length + ')</button>'
     + '<button class="fbtn' + (S.fil === "dep" ? " on" : "") + '" onclick="S.fil=\'dep\';renderPage()">Depenses</button>'
     + '<button class="fbtn' + (S.fil === "rev" ? " on" : "") + '" onclick="S.fil=\'rev\';renderPage()">Revenus</button>'
     + '<button class="fbtn' + (S.fil === "sav" ? " on" : "") + '" onclick="S.fil=\'sav\';renderPage()">Epargne</button>'
     + '</div>'
-    + (list.length === 0 ? empty("Aucun resultat") : list.map(function(t) { return txRow(t, true); }).join(""))
-    + '<button class="btn" style="width:100%;margin-top:10px;font-size:12px" onclick="changePin()">Changer le code PIN</button>'
+
+    // Liste regroupee par date
+    + txHTML
+
+    + '<button class="btn" style="width:100%;margin-top:14px;font-size:12px" onclick="changePin()">Changer le code PIN</button>'
     + '</div>';
 }
 
