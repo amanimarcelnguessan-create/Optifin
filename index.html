@@ -246,7 +246,12 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
     <input id="f-date" type="date"/>
     <div id="cat-wrap">
       <label class="lbl">CATEGORIE</label>
-      <div class="sw"><select id="f-cat"></select></div>
+      <div class="sw"><select id="f-cat" onchange="updateSubSel('f-cat','f-sub')"></select></div>
+      <label class="lbl">SOUS-CATEGORIE (optionnel)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sw" style="flex:1"><select id="f-sub"><option value="">Aucune</option></select></div>
+        <button type="button" onclick="openSubcatMgr('dep','f-cat','f-sub')" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #1A3228;background:#0C1A13;color:#D4A82A;font-size:12px;cursor:pointer;white-space:nowrap">Gerer</button>
+      </div>
     </div>
     <div id="sav-wrap" style="display:none">
       <label class="lbl">TYPE D EPARGNE</label>
@@ -255,11 +260,17 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
         <option value="assurance">Assurance</option>
       </select></div>
       <label class="lbl">SOUS-TYPE</label>
-      <div class="sw"><select id="f-sav-sub"></select></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sw" style="flex:1"><select id="f-sav-sub"></select></div>
+        <button type="button" onclick="openSubcatMgr('sav','f-sav-cat','f-sav-sub')" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #1A3228;background:#0C1A13;color:#D4A82A;font-size:12px;cursor:pointer;white-space:nowrap">Gerer</button>
+      </div>
     </div>
     <div id="inv-wrap" style="display:none">
       <label class="lbl">TYPE DE PLACEMENT</label>
-      <div class="sw"><select id="f-inv-cat"></select></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sw" style="flex:1"><select id="f-inv-cat"></select></div>
+        <button type="button" onclick="openSubcatMgr('inv',null,'f-inv-cat')" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #1A3228;background:#0C1A13;color:#D4A82A;font-size:12px;cursor:pointer;white-space:nowrap">Gerer</button>
+      </div>
     </div>
     <button class="btn btng" style="width:100%;min-height:50px;font-size:15px;margin-top:4px;" onclick="saveTx()">Enregistrer</button>
     <button class="btn" style="width:100%;margin-top:9px;" onclick="hide('m-add')">Annuler</button>
@@ -279,6 +290,22 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
   </div>
 </div>
 
+<div class="ov ovc" id="m-subcat">
+  <div class="dlg">
+    <div id="m-subcat-ttl" style="font-size:18px;font-weight:700;margin-bottom:4px;"></div>
+    <div style="font-size:12px;color:#6B8B76;margin-bottom:14px;">Sous-categories editables</div>
+    <div id="subcat-list" style="max-height:220px;overflow-y:auto;margin-bottom:12px;"></div>
+    <label class="lbl">NOUVELLE SOUS-CATEGORIE</label>
+    <div style="display:flex;gap:8px;">
+      <input id="f-newsub" placeholder="Ex: SODECI, Loyer maison..." type="text" autocomplete="off" style="flex:1"/>
+      <button type="button" onclick="subcatMgrAdd()" style="min-height:44px;padding:0 16px;border-radius:10px;border:none;background:#D4A82A;color:#060F0A;font-weight:700;font-size:13px;cursor:pointer">+ Ajouter</button>
+    </div>
+    <div class="mrow">
+      <button class="btn" style="flex:1" onclick="closeSubcatMgr()">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="m-goal">
   <div class="sheet">
     <div class="hdl"></div>
@@ -288,25 +315,6 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
     <label class="lbl">CATEGORIE</label>
     <div class="sw"><select id="g-cat" onchange="toggleGoalAutoInfo()">
       <option value="">-- Aucune (saisie manuelle) --</option>
-      <optgroup label="Cash">
-        <option value="cash-libre">Cash libre</option>
-        <option value="cash-urgence">Fonds urgence</option>
-        <option value="cash-projet">Projet personnel</option>
-      </optgroup>
-      <optgroup label="Assurance">
-        <option value="ass-retraite">Epargne retraite</option>
-        <option value="ass-education">Education enfant</option>
-        <option value="ass-deces">Assurance deces</option>
-        <option value="ass-sante">Assurance sante</option>
-        <option value="ass-autre">Autre assurance</option>
-      </optgroup>
-      <optgroup label="Investissement">
-        <option value="inv-brvm">BRVM</option>
-        <option value="inv-immo">Immobilier</option>
-        <option value="inv-init">Initiative personnelle</option>
-        <option value="inv-crypto">Crypto / Digital</option>
-        <option value="inv-autre">Autre investissement</option>
-      </optgroup>
     </select></div>
     <div id="g-autolink-info" style="font-size:11px;color:#34D399;margin:-6px 0 10px;display:none;">Les transactions epargne ou investissement de cette categorie alimenteront cet objectif automatiquement.</div>
     <label class="lbl">MONTANT CIBLE (FCFA)</label>
@@ -367,7 +375,12 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
     <input id="e-date" type="date"/>
     <div id="e-cat-wrap">
       <label class="lbl">CATEGORIE</label>
-      <div class="sw"><select id="e-cat"></select></div>
+      <div class="sw"><select id="e-cat" onchange="updateSubSel('e-cat','e-sub')"></select></div>
+      <label class="lbl">SOUS-CATEGORIE (optionnel)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sw" style="flex:1"><select id="e-sub"><option value="">Aucune</option></select></div>
+        <button type="button" onclick="openSubcatMgr('dep','e-cat','e-sub')" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #1A3228;background:#0C1A13;color:#D4A82A;font-size:12px;cursor:pointer;white-space:nowrap">Gerer</button>
+      </div>
     </div>
     <div id="e-sav-wrap" style="display:none">
       <label class="lbl">TYPE D EPARGNE</label>
@@ -376,11 +389,17 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
         <option value="assurance">Assurance</option>
       </select></div>
       <label class="lbl">SOUS-TYPE</label>
-      <div class="sw"><select id="e-sav-sub"></select></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sw" style="flex:1"><select id="e-sav-sub"></select></div>
+        <button type="button" onclick="openSubcatMgr('sav','e-sav-cat','e-sav-sub')" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #1A3228;background:#0C1A13;color:#D4A82A;font-size:12px;cursor:pointer;white-space:nowrap">Gerer</button>
+      </div>
     </div>
     <div id="e-inv-wrap" style="display:none">
       <label class="lbl">TYPE DE PLACEMENT</label>
-      <div class="sw"><select id="e-inv-cat"></select></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sw" style="flex:1"><select id="e-inv-cat"></select></div>
+        <button type="button" onclick="openSubcatMgr('inv',null,'e-inv-cat')" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #1A3228;background:#0C1A13;color:#D4A82A;font-size:12px;cursor:pointer;white-space:nowrap">Gerer</button>
+      </div>
     </div>
     <button class="btn btng" style="width:100%;min-height:50px;font-size:15px;margin-top:4px;" onclick="saveEdit()">Enregistrer</button>
     <button class="btn" style="width:100%;margin-top:9px;" onclick="hide('m-edit')">Annuler</button>
@@ -447,7 +466,12 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
     <input id="r-day" placeholder="Ex: 1 pour le 1er du mois" type="number" inputmode="decimal" min="1" max="28"/>
     <div id="r-cat-wrap">
       <label class="lbl">CATEGORIE</label>
-      <div class="sw"><select id="r-cat"></select></div>
+      <div class="sw"><select id="r-cat" onchange="updateSubSel('r-cat','r-sub')"></select></div>
+      <label class="lbl">SOUS-CATEGORIE (optionnel)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sw" style="flex:1"><select id="r-sub"><option value="">Aucune</option></select></div>
+        <button type="button" onclick="openSubcatMgr('dep','r-cat','r-sub')" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #1A3228;background:#0C1A13;color:#D4A82A;font-size:12px;cursor:pointer;white-space:nowrap">Gerer</button>
+      </div>
     </div>
     <div id="r-sav-wrap" style="display:none">
       <label class="lbl">TYPE EPARGNE</label>
@@ -456,11 +480,17 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
         <option value="assurance">Assurance</option>
       </select></div>
       <label class="lbl">SOUS-TYPE</label>
-      <div class="sw"><select id="r-sav-sub"></select></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sw" style="flex:1"><select id="r-sav-sub"></select></div>
+        <button type="button" onclick="openSubcatMgr('sav','r-sav-cat','r-sav-sub')" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #1A3228;background:#0C1A13;color:#D4A82A;font-size:12px;cursor:pointer;white-space:nowrap">Gerer</button>
+      </div>
     </div>
     <div id="r-inv-wrap" style="display:none">
       <label class="lbl">TYPE DE PLACEMENT</label>
-      <div class="sw"><select id="r-inv-cat"></select></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="sw" style="flex:1"><select id="r-inv-cat"></select></div>
+        <button type="button" onclick="openSubcatMgr('inv',null,'r-inv-cat')" style="min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #1A3228;background:#0C1A13;color:#D4A82A;font-size:12px;cursor:pointer;white-space:nowrap">Gerer</button>
+      </div>
     </div>
     <button class="btn btng" style="width:100%;min-height:50px;font-size:15px;margin-top:4px;" onclick="saveRecur()">Enregistrer</button>
     <button class="btn" style="width:100%;margin-top:9px;" onclick="hide('m-recur')">Annuler</button>
@@ -540,9 +570,10 @@ var SAV_CAT_COLORS = {cash:"#34D399",assurance:"#60A5FA"};
 
 function getSavLabel(savCat, savSub) {
   if (!savCat) return "Epargne";
-  var grp = SAV_TYPES[savCat];
-  if (!grp) return SAV_CAT_LABELS[savCat] || savCat;
-  var sub = grp.find(function(s) { return s.id === savSub; });
+  var grp = SAV_TYPES[savCat] || [];
+  var custom = (S.subCats && S.subCats["sav-"+savCat]) || [];
+  var all = grp.concat(custom);
+  var sub = all.find(function(s) { return s.id === savSub; });
   return sub ? sub.l : (SAV_CAT_LABELS[savCat] || savCat);
 }
 function getSavColor(savCat) {
@@ -559,7 +590,8 @@ var INV_CATS = [
 ];
 var INV_COLOR = "#FBBF24";
 function getInvLabel(invCat) {
-  var f = INV_CATS.find(function(s) { return s.id === invCat; });
+  var custom = (S.subCats && S.subCats["inv"]) || [];
+  var f = INV_CATS.concat(custom).find(function(s) { return s.id === invCat; });
   return f ? f.l : "Investissement";
 }
 
@@ -579,6 +611,65 @@ var TODAY = CY + "-" + p2(CM + 1) + "-" + p2(NOW.getDate());
 
 function p2(n) { return String(n).padStart(2, "0"); }
 function getC(id) { return CATS.find(function(c) { return c.id === id; }) || {l:id, c:"#888"}; }
+
+// Sous-categories editables (depenses + epargne + investissement)
+function ensureDefaultSubcats() {
+  if (!S.subCats.factures) {
+    S.subCats.factures = [
+      {id:"sub-"+Date.now()+"1", l:"SODECI"},
+      {id:"sub-"+Date.now()+"2", l:"CIE"},
+      {id:"sub-"+Date.now()+"3", l:"Internet"}
+    ];
+  }
+}
+function isPseudoCat(id) { return id === "sav-cash" || id === "sav-assurance" || id === "inv"; }
+function getCatTitle(id) {
+  if (id === "sav-cash") return "Epargne - Cash";
+  if (id === "sav-assurance") return "Epargne - Assurance";
+  if (id === "inv") return "Investissement";
+  return getC(id).l;
+}
+function getFixedSubs(id) {
+  if (id === "sav-cash") return SAV_TYPES.cash;
+  if (id === "sav-assurance") return SAV_TYPES.assurance;
+  if (id === "inv") return INV_CATS;
+  return [];
+}
+function getCustomSubs(id) { return S.subCats[id] || []; }
+function getSubCats(catId) { return getFixedSubs(catId).concat(getCustomSubs(catId)); }
+function getSubLabel(catId, subId) {
+  if (!subId) return null;
+  var f = getSubCats(catId).find(function(s) { return s.id === subId; });
+  return f ? f.l : null;
+}
+function addSubCat(catId, label) {
+  label = (label || "").trim();
+  if (!label) return null;
+  if (!S.subCats[catId]) S.subCats[catId] = [];
+  var id = "sub-" + Date.now() + Math.floor(Math.random()*1000);
+  S.subCats[catId].push({id:id, l:label});
+  save();
+  return id;
+}
+function renameSubCat(catId, subId, label) {
+  label = (label || "").trim();
+  if (!label) return;
+  if (getFixedSubs(catId).some(function(s) { return s.id === subId; })) { toast("Type par defaut, non modifiable"); return; }
+  if (!S.subCats[catId]) return;
+  var it = S.subCats[catId].find(function(s) { return s.id === subId; });
+  if (it) { it.l = label; save(); }
+}
+function delSubCat(catId, subId) {
+  if (getFixedSubs(catId).some(function(s) { return s.id === subId; })) { toast("Type par defaut, non supprimable"); return; }
+  if (!S.subCats[catId]) return;
+  S.subCats[catId] = S.subCats[catId].filter(function(s) { return s.id !== subId; });
+  // detache les transactions qui pointaient sur cette sous-categorie
+  S.txs.forEach(function(t) {
+    if (catId === "inv" && t.type === "inv" && t.invCat === subId) t.invCat = null;
+    else if (isPseudoCat(catId) === false && t.cat === catId && t.sub === subId) t.sub = null;
+  });
+  save();
+}
 function fmt(n) { return new Intl.NumberFormat("fr-FR").format(Math.round(Math.abs(n))) + " F"; }
 function esc(s) {
   return String(s || "")
@@ -645,6 +736,7 @@ var S = {
   tab: "dash",
   txs: migrateInvestissement(lsGet("fci_txs", [])),
   bud: lsGet("fci_bud", {alimentation:0,transport:0,logement:0,sante:0,loisirs:0,epargne:0,education:0,compagne:0,autres:0}),
+  subCats: lsGet("fci_subcats", {}),
   goals: lsGet("fci_goals", []),
   recurs: migrateRecurs(lsGet("fci_recurs", [])),
   fil: "tous",
@@ -655,12 +747,14 @@ var S = {
   txMon: CY + "-" + p2(CM + 1)  // mois selectionne dans les operations (format YYYY-MM)
 };
 var AI_KEY = lsGet("fci_ai_key", "");
+ensureDefaultSubcats();
 
 function save() {
   lsSet("fci_txs", S.txs);
   lsSet("fci_bud", S.bud);
   lsSet("fci_goals", S.goals);
   lsSet("fci_recurs", S.recurs);
+  lsSet("fci_subcats", S.subCats);
   saveUserData();
   setTimeout(autoSync, 1200);
 }
@@ -716,7 +810,8 @@ function txRow(t, showActions) {
   var icol = t.type === "sav" ? savColor : t.type === "inv" ? INV_COLOR : cat ? cat.c : GOLD;
   var icoTxt = t.type === "sav" ? (SAV_CAT_LABELS[t.savCat] || "SAV").substring(0,3).toUpperCase() : t.type === "inv" ? "INV" : cat ? cat.l.substring(0, 3).toUpperCase() : "REV";
   var savLbl = t.type === "sav" ? getSavLabel(t.savCat, t.savSub) : t.type === "inv" ? getInvLabel(t.invCat) : "";
-  var meta = esc(t.date) + ((t.type === "sav" || t.type === "inv") && savLbl ? " - " + savLbl : cat ? " - " + cat.l : "") + (t.src === "csv" ? " - CSV" : "");
+  var subLbl = (t.type === "dep" && t.cat && t.sub) ? getSubLabel(t.cat, t.sub) : null;
+  var meta = esc(t.date) + ((t.type === "sav" || t.type === "inv") && savLbl ? " - " + savLbl : cat ? " - " + cat.l + (subLbl ? " / " + subLbl : "") : "") + (t.src === "csv" ? " - CSV" : "");
   var actions = showActions
     ? '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'
       + '<button class="tx-act tx-act-eye" onclick="viewTx(' + t.id + ')">voir</button>'
@@ -1130,7 +1225,25 @@ function renderAna() {
       + '<div style="display:flex;justify-content:space-between;margin-bottom:5px">'
       + '<div style="font-size:12.5px">' + cat.l + '</div>'
       + '<div style="font-size:12.5px;font-weight:600">' + fmt(sp) + ' <span style="color:' + MU + ';font-weight:400">(' + pct + '%)</span></div>'
-      + '</div>' + pb(pct, cat.c, 6) + '</div>';
+      + '</div>' + pb(pct, cat.c, 6);
+    var catSubs = getSubCats(cat.id);
+    if (catSubs.length) {
+      var subRows = "";
+      catSubs.forEach(function(sub) {
+        var subTotal = sumA(curTxs().filter(function(t) { return t.type === "dep" && t.cat === cat.id && t.sub === sub.id; }), function(t) { return t.amount; });
+        if (subTotal > 0) {
+          var subPct = sp > 0 ? Math.round((subTotal/sp)*100) : 0;
+          subRows += '<div style="display:flex;justify-content:space-between;font-size:11px;color:' + MU + ';padding:3px 0 3px 10px;border-left:2px solid ' + cat.c + '33;margin-top:4px"><span>' + esc(sub.l) + '</span><span style="color:#EEF0EB">' + fmt(subTotal) + ' <span style="color:' + MU + '">(' + subPct + '%)</span></span></div>';
+        }
+      });
+      var subAssigned = sumA(curTxs().filter(function(t) { return t.type === "dep" && t.cat === cat.id && t.sub; }), function(t) { return t.amount; });
+      var nonAssigned = sp - subAssigned;
+      if (subRows && nonAssigned > 0) {
+        subRows += '<div style="display:flex;justify-content:space-between;font-size:11px;color:' + MU + ';padding:3px 0 3px 10px;border-left:2px solid #2A4035;margin-top:4px"><span>Non classe</span><span style="color:#EEF0EB">' + fmt(nonAssigned) + '</span></div>';
+      }
+      catR += subRows;
+    }
+    catR += '</div>';
   }
   var bL = []; var bR = []; var bD = []; var bSav = [];
   for (var i = 5; i >= 0; i--) {
@@ -1249,7 +1362,7 @@ function renderGoals() {
   return '<div class="fu">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
     + '<div style="font-size:20px;font-weight:700">Objectifs</div>'
-    + '<button class="btn btng" style="padding:0 14px" onclick="show(\'m-goal\')">+ Nouveau</button>'
+    + '<button class="btn btng" style="padding:0 14px" onclick="openGoalModal()">+ Nouveau</button>'
     + '</div>'
     + (S.goals.length === 0 ? empty("Aucun objectif. Creez-en un.") : rows)
     + '</div>';
@@ -1447,6 +1560,7 @@ function cloudPull() {
           S.bud = restoredUser.bud || S.bud;
           S.goals = restoredUser.goals || [];
           S.recurs = restoredUser.recurs || [];
+          S.subCats = restoredUser.subCats || S.subCats;
           currentUser = restoredUser;
         }
       }
@@ -1751,6 +1865,7 @@ function setRType(t) {
   document.getElementById("r-inv-wrap").style.display = t === "inv" ? "block" : "none";
   if (t === "sav") updateSavSub("r-sav-sub", "r-sav-cat");
   if (t === "inv") populateInvSel("r-inv-cat");
+  if (t === "dep") updateSubSel("r-cat", "r-sub");
 }
 
 function saveRecur() {
@@ -1759,11 +1874,12 @@ function saveRecur() {
   var freq = document.getElementById("r-freq").value;
   var day = parseInt(document.getElementById("r-day").value) || 1;
   var cat = rType === "dep" ? document.getElementById("r-cat").value : null;
+  var sub = rType === "dep" ? (document.getElementById("r-sub").value || null) : null;
   var savCat = rType === "sav" ? document.getElementById("r-sav-cat").value : null;
   var savSub = rType === "sav" ? document.getElementById("r-sav-sub").value : null;
   var invCat = rType === "inv" ? document.getElementById("r-inv-cat").value : null;
   if (!desc || !amt || isNaN(amt)) { toast("Remplissez description et montant"); return; }
-  S.recurs.push({id:Date.now(), desc:desc, amount:Math.abs(amt), type:rType, cat:cat, savCat:savCat, savSub:savSub, invCat:invCat, freq:freq, day:Math.min(Math.max(day,1),28), active:true, lastRun:null});
+  S.recurs.push({id:Date.now(), desc:desc, amount:Math.abs(amt), type:rType, cat:cat, sub:sub, savCat:savCat, savSub:savSub, invCat:invCat, freq:freq, day:Math.min(Math.max(day,1),28), active:true, lastRun:null});
   save(); hide("m-recur"); renderPage(); toast("Recurrence creee !");
 }
 
@@ -1789,7 +1905,7 @@ function checkRecurrences() {
       }
     }
     if (shouldRun) {
-      S.txs.unshift({id:Date.now()+Math.random(), date:todayStr, type:r.type, cat:r.cat, savCat:r.savCat, savSub:r.savSub, invCat:r.invCat, desc:r.desc, amount:r.amount, src:"auto"});
+      S.txs.unshift({id:Date.now()+Math.random(), date:todayStr, type:r.type, cat:r.cat, sub:r.sub||null, savCat:r.savCat, savSub:r.savSub, invCat:r.invCat, desc:r.desc, amount:r.amount, src:"auto"});
       added++;
     }
   });
@@ -1899,17 +2015,19 @@ function setType(t) {
   var iw = document.getElementById("inv-wrap"); if (iw) { iw.style.display = t === "inv" ? "block" : "none"; }
   if (t === "sav") { updateSavSub("f-sav-sub", "f-sav-cat"); }
   if (t === "inv") { populateInvSel("f-inv-cat"); }
+  if (t === "dep") { updateSubSel("f-cat", "f-sub"); }
 }
 function saveTx() {
   var desc = document.getElementById("f-desc").value.trim();
   var amt = parseFloat(document.getElementById("f-amt").value);
   var date = document.getElementById("f-date").value || TODAY;
   var cat = S.txType === "dep" ? document.getElementById("f-cat").value : null;
+  var sub = S.txType === "dep" ? (document.getElementById("f-sub").value || null) : null;
   if (!desc || !amt || isNaN(amt)) { toast("Remplissez description et montant"); return; }
   var savCat = S.txType === "sav" ? document.getElementById("f-sav-cat").value : null;
   var savSub = S.txType === "sav" ? document.getElementById("f-sav-sub").value : null;
   var invCat = S.txType === "inv" ? document.getElementById("f-inv-cat").value : null;
-  S.txs.unshift({id:Date.now(), date:date, type:S.txType, cat:cat, savCat:savCat, savSub:savSub, invCat:invCat, desc:desc, amount:Math.abs(amt), src:"man"});
+  S.txs.unshift({id:Date.now(), date:date, type:S.txType, cat:cat, sub:sub, savCat:savCat, savSub:savSub, invCat:invCat, desc:desc, amount:Math.abs(amt), src:"man"});
   save(); hide("m-add"); renderPage(); toast("Transaction enregistree");
 }
 function delTx(id) {
@@ -1923,6 +2041,28 @@ var editId = null;
 var editType = "dep";
 var reportType = "sav";
 
+function openGoalModal() {
+  var sel = document.getElementById("g-cat");
+  var prev = sel.value;
+  sel.innerHTML = '<option value="">-- Aucune (saisie manuelle) --</option>';
+  function addGrp(label, arr) {
+    if (!arr.length) return;
+    var og = document.createElement("optgroup");
+    og.label = label;
+    arr.forEach(function(s) {
+      var o = document.createElement("option");
+      o.value = s.id; o.textContent = s.l;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  }
+  addGrp("Cash", getSubCats("sav-cash"));
+  addGrp("Assurance", getSubCats("sav-assurance"));
+  addGrp("Investissement", getSubCats("inv"));
+  if (Array.prototype.some.call(sel.options, function(o) { return o.value === prev; })) sel.value = prev;
+  document.getElementById("g-autolink-info").style.display = "none";
+  show("m-goal");
+}
 function toggleGoalAutoInfo() {
   var cat = document.getElementById("g-cat");
   var info = document.getElementById("g-autolink-info");
@@ -1939,50 +2079,157 @@ function toggleGoalAutoInfo() {
     }
   }
 }
+function goalSubKind(savSub) {
+  if (!savSub) return null;
+  if (getSubCats("inv").some(function(s) { return s.id === savSub; })) return "inv";
+  if (getSubCats("sav-cash").some(function(s) { return s.id === savSub; })) return "cash";
+  if (getSubCats("sav-assurance").some(function(s) { return s.id === savSub; })) return "assurance";
+  return null;
+}
 function getGoalColor(savSub) {
-  if (!savSub) return GOLD;
-  if (savSub.indexOf("cash") === 0) return "#34D399";
-  if (savSub.indexOf("ass") === 0) return "#60A5FA";
-  if (savSub.indexOf("inv") === 0) return "#FBBF24";
+  var k = goalSubKind(savSub);
+  if (k === "cash") return "#34D399";
+  if (k === "assurance") return "#60A5FA";
+  if (k === "inv") return "#FBBF24";
   return GOLD;
 }
 function getGoalCatLabel(savSub) {
   if (!savSub) return null;
-  if (savSub.indexOf("inv-") === 0) return getInvLabel(savSub);
-  var all = SAV_TYPES.cash.concat(SAV_TYPES.assurance);
-  var found = all.find(function(s) { return s.id === savSub; });
-  return found ? found.l : null;
+  var k = goalSubKind(savSub);
+  if (k === "inv") return getInvLabel(savSub);
+  if (k === "cash" || k === "assurance") return getSubLabel("sav-" + k, savSub);
+  return null;
 }
 function getGoalAutoAmount(savSub) {
   if (!savSub) return null;
-  if (savSub.indexOf("inv-") === 0) {
+  var k = goalSubKind(savSub);
+  if (k === "inv") {
     return sumA(S.txs.filter(function(t) { return t.type === "inv" && t.invCat === savSub; }), function(t) { return t.amount; });
   }
-  return sumA(S.txs.filter(function(t) { return t.type === "sav" && t.savSub === savSub; }), function(t) { return t.amount; });
+  if (k === "cash" || k === "assurance") {
+    return sumA(S.txs.filter(function(t) { return t.type === "sav" && t.savSub === savSub; }), function(t) { return t.amount; });
+  }
+  return null;
 }
 
 function updateSavSub(subId, catId) {
   var catEl = document.getElementById(catId);
   var subEl = document.getElementById(subId);
   if (!catEl || !subEl) return;
-  var grp = SAV_TYPES[catEl.value] || [];
+  var prev = subEl.value;
+  var grp = getSubCats("sav-" + catEl.value);
   subEl.innerHTML = "";
   for (var i = 0; i < grp.length; i++) {
     var o = document.createElement("option");
     o.value = grp[i].id; o.textContent = grp[i].l;
     subEl.appendChild(o);
   }
+  if (grp.some(function(s) { return s.id === prev; })) subEl.value = prev;
 }
 
 function populateInvSel(selId) {
   var el = document.getElementById(selId);
   if (!el) return;
+  var prev = el.value;
+  var arr = getSubCats("inv");
   el.innerHTML = "";
-  for (var i = 0; i < INV_CATS.length; i++) {
+  for (var i = 0; i < arr.length; i++) {
     var o = document.createElement("option");
-    o.value = INV_CATS[i].id; o.textContent = INV_CATS[i].l;
+    o.value = arr[i].id; o.textContent = arr[i].l;
     el.appendChild(o);
   }
+  if (arr.some(function(s) { return s.id === prev; })) el.value = prev;
+}
+
+// Sous-categories editables (UI)
+function updateSubSel(catSelId, subSelId) {
+  var catEl = document.getElementById(catSelId);
+  var subEl = document.getElementById(subSelId);
+  if (!catEl || !subEl) return;
+  var prev = subEl.value;
+  var arr = getSubCats(catEl.value);
+  subEl.innerHTML = '<option value="">Aucune</option>';
+  arr.forEach(function(s) {
+    var o = document.createElement("option");
+    o.value = s.id; o.textContent = s.l;
+    subEl.appendChild(o);
+  });
+  if (arr.some(function(s) { return s.id === prev; })) subEl.value = prev;
+}
+
+var subcatMgrCatId = null, subcatMgrRefresh = null;
+function openSubcatMgr(kind, catSelId, subSelId) {
+  var catId, refreshFn;
+  if (kind === "dep") {
+    var catEl = document.getElementById(catSelId);
+    if (!catEl || !catEl.value) { toast("Choisissez d'abord une categorie"); return; }
+    catId = catEl.value;
+    refreshFn = function() { updateSubSel(catSelId, subSelId); };
+  } else if (kind === "sav") {
+    var catEl2 = document.getElementById(catSelId);
+    catId = "sav-" + catEl2.value;
+    refreshFn = function() { updateSavSub(subSelId, catSelId); };
+  } else if (kind === "inv") {
+    catId = "inv";
+    refreshFn = function() { populateInvSel(subSelId); };
+  } else { return; }
+  subcatMgrCatId = catId;
+  subcatMgrRefresh = refreshFn;
+  document.getElementById("m-subcat-ttl").textContent = "Sous-categories - " + getCatTitle(catId);
+  document.getElementById("f-newsub").value = "";
+  renderSubcatMgrList();
+  show("m-subcat");
+}
+function renderSubcatMgrList() {
+  var catId = subcatMgrCatId;
+  var fixed = getFixedSubs(catId);
+  var custom = getCustomSubs(catId);
+  var fixedHtml = fixed.map(function(s) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #1A3228">'
+      + '<span style="font-size:13px;color:#EEF0EB">' + esc(s.l) + '</span>'
+      + '<span style="font-size:10px;color:#6B8B76;background:rgba(255,255,255,0.05);padding:3px 8px;border-radius:6px">Par defaut</span>'
+      + '</div>';
+  }).join("");
+  var customHtml = custom.map(function(s) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #1A3228">'
+      + '<span style="font-size:13px">' + esc(s.l) + '</span>'
+      + '<div style="display:flex;gap:6px">'
+      + '<button type="button" onclick="subcatMgrRename(\'' + s.id + '\')" style="padding:5px 10px;border-radius:8px;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);color:#60A5FA;font-size:11px;cursor:pointer;font-family:inherit">Renommer</button>'
+      + '<button type="button" onclick="subcatMgrDel(\'' + s.id + '\')" style="padding:5px 10px;border-radius:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#EF4444;font-size:11px;cursor:pointer;font-family:inherit">Supp.</button>'
+      + '</div></div>';
+  }).join("");
+  var html = fixedHtml + customHtml;
+  document.getElementById("subcat-list").innerHTML = html || '<div style="text-align:center;padding:14px;color:#6B8B76;font-size:12px">Aucune sous-categorie</div>';
+}
+function subcatMgrAdd() {
+  var v = document.getElementById("f-newsub").value;
+  if (!v || !v.trim()) { toast("Saisissez un nom"); return; }
+  addSubCat(subcatMgrCatId, v);
+  document.getElementById("f-newsub").value = "";
+  renderSubcatMgrList();
+  if (subcatMgrRefresh) subcatMgrRefresh();
+  toast("Sous-categorie ajoutee");
+}
+function subcatMgrRename(subId) {
+  var cur = getSubLabel(subcatMgrCatId, subId) || "";
+  var v = prompt("Nouveau nom :", cur);
+  if (v !== null && v.trim()) {
+    renameSubCat(subcatMgrCatId, subId, v);
+    renderSubcatMgrList();
+    if (subcatMgrRefresh) subcatMgrRefresh();
+  }
+}
+function subcatMgrDel(subId) {
+  if (!confirm("Supprimer cette sous-categorie ? Les transactions liees seront detachees.")) return;
+  delSubCat(subcatMgrCatId, subId);
+  renderSubcatMgrList();
+  if (subcatMgrRefresh) subcatMgrRefresh();
+  renderPage();
+  toast("Sous-categorie supprimee");
+}
+function closeSubcatMgr() {
+  hide("m-subcat");
+  subcatMgrCatId = null; subcatMgrRefresh = null;
 }
 
 function setReportType(t) {
@@ -2032,10 +2279,11 @@ function viewTx(id) {
   var t = S.txs.find(function(x) { return x.id === id; });
   if (!t) return;
   var cat = t.cat ? getC(t.cat) : null;
+  var subLbl = (t.type === "dep" && t.cat && t.sub) ? getSubLabel(t.cat, t.sub) : null;
   var col = t.type === "rev" ? GRN : t.type === "sav" ? "#34D399" : t.type === "inv" ? INV_COLOR : RED;
   var sig = t.type === "rev" || t.type === "sav" || t.type === "inv" ? "+" : "-";
   document.getElementById("v-head").textContent = t.desc;
-  document.getElementById("v-sub").textContent = t.date + (cat ? " - " + cat.l : "") + (t.src === "csv" ? " - CSV" : "");
+  document.getElementById("v-sub").textContent = t.date + (cat ? " - " + cat.l + (subLbl ? " / " + subLbl : "") : "") + (t.src === "csv" ? " - CSV" : "");
   document.getElementById("v-body").innerHTML =
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #1A3228">'
     + '<span style="font-size:12px;color:#6B8B76">Montant</span>'
@@ -2048,6 +2296,9 @@ function viewTx(id) {
     + (cat ? '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #1A3228">'
     + '<span style="font-size:12px;color:#6B8B76">Categorie</span>'
     + '<span style="font-size:13px;font-weight:600">' + cat.l + '</span></div>' : '')
+    + (subLbl ? '<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #1A3228">'
+    + '<span style="font-size:12px;color:#6B8B76">Sous-categorie</span>'
+    + '<span style="font-size:13px;font-weight:600">' + esc(subLbl) + '</span></div>' : '')
     + '<div style="display:flex;justify-content:space-between;padding:12px 0">'
     + '<span style="font-size:12px;color:#6B8B76">Date</span>'
     + '<span style="font-size:13px;font-weight:600">' + t.date + '</span></div>';
@@ -2065,6 +2316,10 @@ function openEdit(id) {
   document.getElementById("e-date").value = t.date || TODAY;
   setEditType(t.type || "dep");
   if (t.cat) document.getElementById("e-cat").value = t.cat;
+  if (t.type === "dep") {
+    updateSubSel("e-cat", "e-sub");
+    if (t.sub) setTimeout(function() { document.getElementById("e-sub").value = t.sub; }, 30);
+  }
   if (t.type === "sav" && t.savCat) {
     document.getElementById("e-sav-cat").value = t.savCat;
     updateSavSub("e-sav-sub", "e-sav-cat");
@@ -2099,13 +2354,14 @@ function saveEdit() {
   var amt = parseFloat(document.getElementById("e-amt").value);
   var date = document.getElementById("e-date").value || TODAY;
   var cat = editType === "dep" ? document.getElementById("e-cat").value : null;
+  var sub = editType === "dep" ? (document.getElementById("e-sub").value || null) : null;
   if (!desc || !amt || isNaN(amt)) { toast("Remplissez description et montant"); return; }
   var savCat = editType === "sav" ? document.getElementById("e-sav-cat").value : null;
   var savSub = editType === "sav" ? document.getElementById("e-sav-sub").value : null;
   var invCat = editType === "inv" ? document.getElementById("e-inv-cat").value : null;
   S.txs = S.txs.map(function(t) {
     if (t.id === editId) {
-      return {id:t.id, date:date, type:editType, cat:cat, savCat:savCat, savSub:savSub, invCat:invCat, desc:desc, amount:Math.abs(amt), src:t.src};
+      return {id:t.id, date:date, type:editType, cat:cat, sub:sub, savCat:savCat, savSub:savSub, invCat:invCat, desc:desc, amount:Math.abs(amt), src:t.src};
     }
     return t;
   });
@@ -2162,7 +2418,17 @@ document.getElementById("csv-inp").addEventListener("change", function(e) {
       var parts = line.split(",").map(function(s) { return s.trim().replace(/"/g, ""); });
       var amt = Math.abs(parseFloat(parts[2]) || 0);
       if (amt > 0) {
-        S.txs.unshift({id:Date.now()+i, date:parts[0]||TODAY, type:parts[3]==="rev"?"rev":parts[3]==="sav"?"sav":parts[3]==="inv"?"inv":"dep", cat:parts[4]||null, desc:parts[1]||"Import", amount:amt, src:"csv"});
+        var iType = parts[3]==="rev"?"rev":parts[3]==="sav"?"sav":parts[3]==="inv"?"inv":"dep";
+        var iCat = parts[4]||null;
+        var iSub = null;
+        if (iType === "dep" && iCat && parts[5]) {
+          var subLabel = parts[5].trim();
+          if (subLabel) {
+            var existing = getSubCats(iCat).find(function(s) { return s.l.toLowerCase() === subLabel.toLowerCase(); });
+            iSub = existing ? existing.id : addSubCat(iCat, subLabel);
+          }
+        }
+        S.txs.unshift({id:Date.now()+i, date:parts[0]||TODAY, type:iType, cat:iCat, sub:iSub, desc:parts[1]||"Import", amount:amt, src:"csv"});
         n++;
       }
     }
@@ -2390,6 +2656,8 @@ function loginSuccess() {
   S.bud = currentUser.bud || {alimentation:0,transport:0,logement:0,sante:0,loisirs:0,epargne:0,education:0,compagne:0,autres:0};
   S.goals = currentUser.goals || [];
   S.recurs = currentUser.recurs || [];
+  S.subCats = currentUser.subCats || {};
+  ensureDefaultSubcats();
 
   document.getElementById("pin-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
@@ -2445,6 +2713,7 @@ function saveUserData() {
       users[i].bud = S.bud;
       users[i].goals = S.goals;
       users[i].recurs = S.recurs;
+      users[i].subCats = S.subCats;
       break;
     }
   }
@@ -2453,6 +2722,7 @@ function saveUserData() {
   currentUser.bud = S.bud;
   currentUser.goals = S.goals;
   currentUser.recurs = S.recurs;
+  currentUser.subCats = S.subCats;
 }
 
 // ---- INACTIVITY TIMER ----
