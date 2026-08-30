@@ -549,13 +549,17 @@ var CATS = [
   {id:"epargne-erocime",l:"Epargne Erocime",c:"#10B981"},
   {id:"autres",       l:"Autres",       c:"#94A3B8"}
 ];
+// "epargne" et "epargne-erocime" sont conservees pour l'affichage de l'historique
+// mais ne sont plus proposees pour de nouvelles depenses : ce sont desormais des
+// sous-categories d'Epargne (voir SAV_TYPES.cash), pas des postes de depense.
+var DEP_PICK = CATS.filter(function(c) { return c.id !== "epargne" && c.id !== "epargne-erocime"; });
 
 // Savings subcategories
 var SAV_TYPES = {
   cash: [
-    {id:"cash-libre",    l:"Cash libre"},
-    {id:"cash-urgence",  l:"Fonds urgence"},
-    {id:"cash-projet",   l:"Projet personnel"}
+    {id:"cash-urgence",  l:"Urgence Personnelle"},
+    {id:"cash-libre",    l:"Long Terme"},
+    {id:"cash-projet",   l:"Projet Erocime"}
   ],
   assurance: [
     {id:"ass-retraite",  l:"Epargne retraite"},
@@ -582,6 +586,7 @@ function getSavColor(savCat) {
 
 // Investissement - pilier a part entiere (distinct de l'epargne)
 var INV_CATS = [
+  {id:"inv-erocime", l:"Erocime"},
   {id:"inv-brvm",   l:"BRVM"},
   {id:"inv-immo",   l:"Immobilier"},
   {id:"inv-init",   l:"Initiative personnelle"},
@@ -1170,8 +1175,8 @@ function renderBudget() {
   var tS = 0; for (var k in cs) tS += cs[k];
   var dispo = inc - tS - sav - inv;
   var rows = "";
-  for (var ci = 0; ci < CATS.length; ci++) {
-    var cat = CATS[ci];
+  for (var ci = 0; ci < DEP_PICK.length; ci++) {
+    var cat = DEP_PICK[ci];
     var sp = cs[cat.id] || 0; var lim = S.bud[cat.id] || 0;
     var pct = lim > 0 ? Math.min((sp / lim) * 100, 100) : 0;
     var over = lim > 0 && sp > lim; var warn = !over && pct >= 80;
@@ -1827,20 +1832,47 @@ function requestNotifPermission() {
   }
 }
 
-function showNotifBanner(alerts) {
+function showNotifBanner(alerts, title, color, bg) {
   var existing = document.getElementById("notif-banner");
   if (existing) existing.remove();
   if (!alerts || alerts.length === 0) return;
+  title = title || "Alertes budget";
+  color = color || "#D4A82A"; bg = bg || "#2A1A05";
   var banner = document.createElement("div");
   banner.id = "notif-banner";
-  banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:500;background:#2A1A05;border-bottom:2px solid #D4A82A;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;max-width:480px;margin:0 auto;";
+  banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:500;background:" + bg + ";border-bottom:2px solid " + color + ";padding:10px 16px;display:flex;align-items:center;justify-content:space-between;max-width:480px;margin:0 auto;";
   banner.innerHTML = '<div style="font-size:12px;color:#FCD34D;flex:1">'
-    + '<strong style="color:#D4A82A">Alertes budget</strong><br/>'
+    + '<strong style="color:' + color + '">' + title + '</strong><br/>'
     + alerts.slice(0,2).map(function(a){return a;}).join("<br/>")
     + (alerts.length > 2 ? "<br/>+" + (alerts.length-2) + " autres" : "")
     + '</div><button onclick="this.parentNode.remove()" style="background:none;border:none;color:#6B8B76;font-size:18px;cursor:pointer;padding:0 4px;">x</button>';
   document.body.insertBefore(banner, document.body.firstChild);
   setTimeout(function() { if(banner.parentNode) banner.remove(); }, 8000);
+}
+
+// ====================================================
+// RAPPEL DEBUT / FIN DE MOIS
+// ====================================================
+function checkMonthReminder() {
+  if (!currentUser) return;
+  var d = NOW.getDate();
+  var lastDay = new Date(CY, CM + 1, 0).getDate();
+  var period = null, msg = null;
+  if (d <= 3) {
+    period = "start";
+    msg = "Debut de mois : pensez a renseigner vos revenus, votre budget et vos objectifs pour " + MO[CM] + ".";
+  } else if (d >= lastDay - 2) {
+    period = "end";
+    msg = "Fin de mois : pensez a reviser vos depenses, epargne et investissement avant de passer a " + MO[(CM + 1) % 12] + ".";
+  }
+  if (!period) return;
+  var flagKey = "fci_reminder_" + currentUser.id + "_" + CY + "-" + p2(CM + 1) + "-" + period;
+  if (lsGet(flagKey, false)) return;
+  showNotifBanner([msg], period === "start" ? "Debut de mois" : "Fin de mois", "#60A5FA", "#0C1E2A");
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("Finpro - " + (period === "start" ? "Debut de mois" : "Fin de mois"), {body: msg, icon: ""});
+  }
+  lsSet(flagKey, true);
 }
 
 // ====================================================
@@ -2457,18 +2489,18 @@ var catSel = document.getElementById("f-cat");
 var eCatSel = document.getElementById("e-cat");
 var rptCatSel = document.getElementById("rpt-cat");
 var rCatSel = document.getElementById("r-cat");
-for (var ci = 0; ci < CATS.length; ci++) {
+for (var ci = 0; ci < DEP_PICK.length; ci++) {
   var opt = document.createElement("option");
-  opt.value = CATS[ci].id; opt.textContent = CATS[ci].l;
+  opt.value = DEP_PICK[ci].id; opt.textContent = DEP_PICK[ci].l;
   catSel.appendChild(opt);
   var opt2 = document.createElement("option");
-  opt2.value = CATS[ci].id; opt2.textContent = CATS[ci].l;
+  opt2.value = DEP_PICK[ci].id; opt2.textContent = DEP_PICK[ci].l;
   eCatSel.appendChild(opt2);
   var opt3 = document.createElement("option");
-  opt3.value = CATS[ci].id; opt3.textContent = CATS[ci].l;
+  opt3.value = DEP_PICK[ci].id; opt3.textContent = DEP_PICK[ci].l;
   rptCatSel.appendChild(opt3);
   var opt4 = document.createElement("option");
-  opt4.value = CATS[ci].id; opt4.textContent = CATS[ci].l;
+  opt4.value = DEP_PICK[ci].id; opt4.textContent = DEP_PICK[ci].l;
   if(rCatSel) rCatSel.appendChild(opt4);
 }
 setType("dep");
@@ -2680,6 +2712,7 @@ function loginSuccess() {
   renderPage();
   checkRecurrences();
   checkBudgetAlerts();
+  checkMonthReminder();
 }
 
 // ---- LOGOUT ----
