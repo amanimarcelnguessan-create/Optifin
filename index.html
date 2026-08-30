@@ -419,6 +419,16 @@ button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparen
   </div>
 </div>
 
+<div class="ov ovc" id="m-hist">
+  <div class="dlg" style="max-height:82vh;display:flex;flex-direction:column;">
+    <div id="h-head" style="font-size:18px;font-weight:700;margin-bottom:2px;"></div>
+    <div id="h-sub" style="font-size:11px;color:#6B8B76;margin-bottom:12px;"></div>
+    <div id="h-total" style="background:#071410;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;"></div>
+    <div id="h-list" style="overflow-y:auto;flex:1;min-height:0;"></div>
+    <button class="btn" style="width:100%;margin-top:14px;flex-shrink:0" onclick="hide('m-hist')">Fermer</button>
+  </div>
+</div>
+
 
 <div class="ov ovc" id="m-report">
   <div class="dlg">
@@ -831,6 +841,29 @@ function txRow(t, showActions) {
     + actions + '</div>';
 }
 
+// Historique cliquable (drill-down) - filtre un ensemble de transactions et l'affiche
+// filters: {year: 2026, type: "sav", savCat: "cash", invCat: "inv-brvm", cat: "factures"}
+function openHist(title, subtitle, filters) {
+  var list = S.txs.filter(function(t) {
+    if (filters.year && new Date(t.date).getFullYear() !== filters.year) return false;
+    if (filters.month !== undefined && new Date(t.date).getMonth() !== filters.month) return false;
+    if (filters.type && t.type !== filters.type) return false;
+    if (filters.savCat && t.savCat !== filters.savCat) return false;
+    if (filters.invCat && t.invCat !== filters.invCat) return false;
+    if (filters.cat && t.cat !== filters.cat) return false;
+    return true;
+  }).sort(function(a,b) { return b.date.localeCompare(a.date); });
+  var total = sumA(list, function(t) { return t.amount; });
+  document.getElementById("h-head").textContent = title;
+  document.getElementById("h-sub").textContent = subtitle || "";
+  document.getElementById("h-total").innerHTML =
+    '<div style="display:flex;justify-content:space-between"><span style="color:#6B8B76">Total (' + list.length + ' transaction' + (list.length > 1 ? "s" : "") + ')</span><span style="font-weight:700;color:#EEF0EB">' + fmt(total) + '</span></div>';
+  document.getElementById("h-list").innerHTML = list.length
+    ? list.map(function(t) { return txRow(t, true); }).join("")
+    : empty("Aucune transaction");
+  show("m-hist");
+}
+
 function svgDonut(data, total) {
   if (!total || !data.length) return '<div style="text-align:center;padding:14px;color:' + MU + ';font-size:13px">Aucune depense</div>';
   var r = 52; var cx = 70; var cy = 70;
@@ -994,7 +1027,7 @@ function renderDash() {
     + '</div></div>'
     + '<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">'
     + '<div><div style="font-size:10px;color:#6B8B76;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Taux epargne</div>'
-    + '<div style="font-size:11.5px;color:#EEF0EB">Epargne / (Depenses + Epargne)</div></div>'
+    + '<div style="font-size:11.5px;color:#EEF0EB">Epargne / Revenus</div></div>'
     + '<div style="font-size:22px;font-weight:800;color:#34D399">' + svr + '%</div>'
     + '</div>'
     + (inv > 0 ? '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">'
@@ -1413,7 +1446,8 @@ function renderBilan() {
       var rv = sumA(mt.filter(function(t) { return t.type === "rev"; }), function(t) { return t.amount; });
       var dp = sumA(mt.filter(function(t) { return t.type === "dep"; }), function(t) { return t.amount; });
       var sv = sumA(mt.filter(function(t) { return t.type === "sav"; }), function(t) { return t.amount; });
-      months.push({m:m, nm:MS[m], full:MO[m], rv:rv, dp:dp, sv:sv, sol:rv-dp-sv});
+      var iv = sumA(mt.filter(function(t) { return t.type === "inv"; }), function(t) { return t.amount; });
+      months.push({m:m, nm:MS[m], full:MO[m], rv:rv, dp:dp, sv:sv, iv:iv, sol:rv-dp-sv-iv});
     }
   }
   var bestM = null; var wrstM = null;
@@ -1427,15 +1461,20 @@ function renderBilan() {
   var acSorted = CATS.filter(function(c) { return acs[c.id] > 0; }).sort(function(a,b) { return (acs[b.id]||0) - (acs[a.id]||0); });
   for (var i = 0; i < acSorted.length; i++) {
     var c = acSorted[i]; var sp = acs[c.id]; var pct = aE > 0 ? Math.round((sp / aE) * 100) : 0;
-    catR += '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><div style="font-size:12.5px">' + c.l + '</div><div style="font-size:12.5px;font-weight:600">' + fmt(sp) + ' (' + pct + '%)</div></div>' + pb(pct, c.c, 5) + '</div>';
+    catR += '<div style="margin-bottom:12px;cursor:pointer" onclick="openHist(\'' + c.l + ' ' + y + '\',\'Depenses - Historique\',{year:' + y + ',type:\'dep\',cat:\'' + c.id + '\'})"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><div style="font-size:12.5px">' + c.l + '</div><div style="font-size:12.5px;font-weight:600">' + fmt(sp) + ' (' + pct + '%)</div></div>' + pb(pct, c.c, 5) + '</div>';
   }
   var mRows = "";
   for (var i = 0; i < months.length; i++) {
     var mo = months[i]; var ip = mo.sol >= 0;
     var w = mo.rv > 0 ? Math.min((mo.dp / mo.rv) * 100, 100) : 100;
-    mRows += '<div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid ' + BDR + '">'
+    var extra = (mo.sv > 0 || mo.iv > 0) ? '<div style="font-size:10px;color:' + MU + ';margin-top:3px">'
+      + (mo.sv > 0 ? '<span style="color:#34D399">epargne -' + fmt(mo.sv) + '</span>' : '')
+      + (mo.sv > 0 && mo.iv > 0 ? '  ' : '')
+      + (mo.iv > 0 ? '<span style="color:' + INV_COLOR + '">investi -' + fmt(mo.iv) + '</span>' : '')
+      + '</div>' : '';
+    mRows += '<div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid ' + BDR + ';cursor:pointer" onclick="openHist(\'' + mo.full + ' ' + y + '\',\'Toutes transactions du mois\',{year:' + y + ',month:' + mo.m + '})">'
       + '<div style="width:34px;height:34px;border-radius:9px;background:' + (ip ? GRN : RED) + '18;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:' + (ip ? GRN : RED) + ';flex-shrink:0">' + mo.nm + '</div>'
-      + '<div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:' + GRN + '">+ ' + fmt(mo.rv) + '</span><span style="font-size:11px;color:' + RED + '">- ' + fmt(mo.dp) + '</span></div>' + pb(w, ip ? GRN : RED, 4) + '</div>'
+      + '<div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:' + GRN + '">+ ' + fmt(mo.rv) + '</span><span style="font-size:11px;color:' + RED + '">- ' + fmt(mo.dp) + '</span></div>' + pb(w, ip ? GRN : RED, 4) + extra + '</div>'
       + '<div style="font-size:13px;font-weight:700;color:' + (ip ? GRN : RED) + ';flex-shrink:0">' + (ip ? "+" : "") + fmt(mo.sol) + '</div></div>';
   }
   var bLbls = []; var bRevs = []; var bDeps = []; var bSavs = [];
@@ -1449,25 +1488,25 @@ function renderBilan() {
     + '<div class="hlbl">Disponible net ' + y + '</div>'
     + '<div class="hamt" style="color:' + (aB >= 0 ? TXT : RED) + '">' + (aB >= 0 ? "+" : "-") + fmt(aB) + '</div>'
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
-    + '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Revenus</div><div style="font-size:16px;font-weight:800;color:' + GRN + '">' + fmt(aI) + '</div></div>'
-    + '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Depenses</div><div style="font-size:16px;font-weight:800;color:' + RED + '">' + fmt(aE) + '</div></div>'
-    + '<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Epargne</div><div style="font-size:16px;font-weight:800;color:#34D399">' + fmt(aSavY) + '</div><div style="font-size:10px;color:#34D399;margin-top:3px">' + aSv + '% des revenus</div></div>'
-    + '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:12px"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Investissement</div><div style="font-size:16px;font-weight:800;color:' + INV_COLOR + '">' + fmt(aInvY) + '</div><div style="font-size:10px;color:' + INV_COLOR + ';margin-top:3px">' + aIv + '% des revenus</div></div>'
-    + '<div style="background:rgba(212,168,42,0.08);border:1px solid rgba(212,168,42,0.2);border-radius:12px;padding:12px;grid-column:1/3"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Disponible</div><div style="font-size:16px;font-weight:800;color:' + GOLD + '">' + (aB >= 0 ? '+' : '') + fmt(aB) + '</div><div style="font-size:10px;color:' + MU + ';margin-top:3px">Non affecte</div></div>'
+    + '<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px;cursor:pointer" onclick="openHist(\'Revenus ' + y + '\',\'Historique complet\',{year:' + y + ',type:\'rev\'})"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Revenus</div><div style="font-size:16px;font-weight:800;color:' + GRN + '">' + fmt(aI) + '</div></div>'
+    + '<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px;cursor:pointer" onclick="openHist(\'Depenses ' + y + '\',\'Historique complet\',{year:' + y + ',type:\'dep\'})"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Depenses</div><div style="font-size:16px;font-weight:800;color:' + RED + '">' + fmt(aE) + '</div></div>'
+    + '<div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:12px;cursor:pointer" onclick="openHist(\'Epargne ' + y + '\',\'Historique complet\',{year:' + y + ',type:\'sav\'})"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Epargne</div><div style="font-size:16px;font-weight:800;color:#34D399">' + fmt(aSavY) + '</div><div style="font-size:10px;color:#34D399;margin-top:3px">' + aSv + '% des revenus</div></div>'
+    + '<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:12px;padding:12px;cursor:pointer" onclick="openHist(\'Investissement ' + y + '\',\'Historique complet\',{year:' + y + ',type:\'inv\'})"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Investissement</div><div style="font-size:16px;font-weight:800;color:' + INV_COLOR + '">' + fmt(aInvY) + '</div><div style="font-size:10px;color:' + INV_COLOR + ';margin-top:3px">' + aIv + '% des revenus</div></div>'
+    + '<div style="background:rgba(212,168,42,0.08);border:1px solid rgba(212,168,42,0.2);border-radius:12px;padding:12px;grid-column:1/3"><div style="font-size:9px;color:' + MU + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Disponible</div><div style="font-size:16px;font-weight:800;color:' + GOLD + '">' + (aB >= 0 ? '+' : '') + fmt(aB) + '</div><div style="font-size:10px;color:' + MU + ';margin-top:3px">Non affecte = revenus - depenses - epargne - investissement</div></div>'
     + '</div>'
     + '</div>'
     + (aSavY > 0 ? '<div class="card" style="margin-bottom:10px;border-color:rgba(52,211,153,0.2)"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Repartition epargne ' + y + '</div>'
     + ["cash","assurance"].map(function(k) {
         if (!aSavByType[k]) return "";
         var pct = aSavY > 0 ? Math.round((aSavByType[k]/aSavY)*100) : 0;
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1A3228"><div style="font-size:12.5px;font-weight:600;color:' + getSavColor(k) + '">' + SAV_CAT_LABELS[k] + '</div><div style="font-size:13px;font-weight:700">' + fmt(aSavByType[k]) + ' <span style="color:#6B8B76;font-weight:400">(' + pct + '%)</span></div></div>';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1A3228;cursor:pointer" onclick="openHist(\'' + SAV_CAT_LABELS[k] + ' ' + y + '\',\'Epargne - Historique\',{year:' + y + ',type:\'sav\',savCat:\'' + k + '\'})"><div style="font-size:12.5px;font-weight:600;color:' + getSavColor(k) + '">' + SAV_CAT_LABELS[k] + '</div><div style="font-size:13px;font-weight:700">' + fmt(aSavByType[k]) + ' <span style="color:#6B8B76;font-weight:400">(' + pct + '%)</span></div></div>';
       }).join("")
     + '</div>' : "")
     + (aInvY > 0 ? '<div class="card" style="margin-bottom:10px;border-color:rgba(251,191,36,0.3)"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Repartition investissement ' + y + '</div>'
     + INV_CATS.map(function(sub) {
         if (!aInvByType[sub.id]) return "";
         var pct = aInvY > 0 ? Math.round((aInvByType[sub.id]/aInvY)*100) : 0;
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1A3228"><div style="font-size:12.5px;font-weight:600;color:' + INV_COLOR + '">' + sub.l + '</div><div style="font-size:13px;font-weight:700">' + fmt(aInvByType[sub.id]) + ' <span style="color:#6B8B76;font-weight:400">(' + pct + '%)</span></div></div>';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1A3228;cursor:pointer" onclick="openHist(\'' + sub.l + ' ' + y + '\',\'Investissement - Historique\',{year:' + y + ',type:\'inv\',invCat:\'' + sub.id + '\'})"><div style="font-size:12.5px;font-weight:600;color:' + INV_COLOR + '">' + sub.l + '</div><div style="font-size:13px;font-weight:700">' + fmt(aInvByType[sub.id]) + ' <span style="color:#6B8B76;font-weight:400">(' + pct + '%)</span></div></div>';
       }).join("")
     + '</div>' : "")
     + (bestM && wrstM && bestM.m !== wrstM.m ? '<div style="display:flex;gap:9px;margin-bottom:10px">'
@@ -2016,7 +2055,7 @@ function goTab(id) {
 // Modals
 function show(id) { document.getElementById(id).classList.add("show"); }
 function hide(id) { document.getElementById(id).classList.remove("show"); }
-var modalIds = ["m-add", "m-bud", "m-goal", "m-cloud", "m-aikey", "m-edit", "m-view", "m-report", "m-recur"];
+var modalIds = ["m-add", "m-bud", "m-goal", "m-cloud", "m-aikey", "m-edit", "m-view", "m-report", "m-recur", "m-subcat", "m-hist"];
 for (var mi = 0; mi < modalIds.length; mi++) {
   (function(id) {
     document.getElementById(id).addEventListener("click", function(e) { if (e.target === this) hide(id); });
@@ -2308,6 +2347,7 @@ function doReport() {
 }
 
 function viewTx(id) {
+  hide("m-hist");
   var t = S.txs.find(function(x) { return x.id === id; });
   if (!t) return;
   var cat = t.cat ? getC(t.cat) : null;
